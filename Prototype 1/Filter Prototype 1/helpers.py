@@ -55,4 +55,9 @@ def getDS(data):
 
 #calculates the area under the graph which should be significant wave height
 def getSH(data):
-    pass
+    SWH = 0 #significant wave height variable
+
+    #running through the data, calculating small rectangles, and summing them up
+    for i in range(len(data)-1): 
+        SWH += (data[i+1][0] - data[i][0]) * (data[i][1]) 
+    return SWH

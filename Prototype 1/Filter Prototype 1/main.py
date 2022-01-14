@@ -69,8 +69,10 @@ def main(argv):
         writer = csv.writer(file)
         writer.writerows(data3)
 
-   
+    print("Significant wave height = ", getSH(data3))
+
     plt.show()
+
 
 
 if __name__ == "__main__":
