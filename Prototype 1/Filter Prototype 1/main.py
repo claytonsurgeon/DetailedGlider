@@ -69,15 +69,7 @@ def main(argv):
         writer = csv.writer(file)
         writer.writerows(data3)
 
-    #getting significant wave height
-    datawithRMS = getSH(data3)
-
-    #plotting the significant wave height
-    plot3 = plt.figure(4)
-    plt.plot([i[0] for i in datawithRMS], [i[2] for i in datawithRMS], color='orange', linewidth=.5)    
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('RMS')
-    plt.title('Significant Wave Height')
+   
     plt.show()
 
 
