@@ -1,0 +1,30 @@
+
+
+Clayton:
+1. read data
+2. have arrays of data points (U, E, N)
+3. FFT on arrays to get power spectrum
+
+Alex: 
+1. Filter out the low frequency values
+2. Convert all the data to a displacement spectrum
+    - loop through all the data point
+    - apply the formula from KFC
+3. calculate significant wave height
+
+
+Ben:
+1. 
+
+[0000][0000]
+   
+data {
+	accU: [...]
+	accN: [...]
+}
+	data.accE[0]
+	data.accU[0]
+
+
+[accU, acc, accN]
+
