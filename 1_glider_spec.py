@@ -15,73 +15,8 @@ Read Data file
 -----------------------------------------------------------
 Mock Wave
 
+
 """
-
-# hann_window = 0.5(1-cos(2*pi*x / (M-1)))
-
-
-duration = 20*60    # 20 minute sampling period
-samples  = 2**18     # number of samples in data set
-
-# array of time increments
-time = np.linspace(0, duration, samples, endpoint=False)
-# print(time)
-
-# a composite wave for basic testing
-# let's pretend this is eastward acceleration data
-# wave = 10*np.sin(2*np.pi*time * (1/100)) + 2*np.cos(2*np.pi*time * (1/200))
-wave = 10*np.sin(2*np.pi*time * (1/1)) + 2*np.cos(2*np.pi*time * (1/30))
-
-
-num_of_windows = samples // 2**17
-M = samples // num_of_windows
-# M = samples // 4
-print(f"num_of_windows {num_of_windows}")
-hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
-# for i in hann_window:
-#     print(i, '\n')
-window1 = wave[0:M] #* hann_window
-
-
-
-
-# plt.figure(1)
-# plt.plot(range(0, hann_window.size), hann_window)
-# # plt.xlim(0, duration)
-# plt.xlabel("time (second)")
-# # plt.ylabel("m/s^2")
-# plt.title('Original Signal in Time Domain')
-
-# plt.show()
-
-
-
-
-# exit(0)
-windows = [window1]
-counter = 0
-while counter < num_of_windows -1:
-	# print(counter*M+(M//2), counter*M+(M//2)+M)
-	next_window = wave[counter*M+(M//2):counter*M+(M//2)+M] #* hann_window
-	windows.append(next_window)
-	counter += 1 
-print(len(windows))
-	
-
-# exit(0)
-print(wave)
-
-sampling_freq = duration / (samples - 0)
-
-
-# display the original wave time vs m/s^2
-plt.figure(1)
-plt.plot(time, wave)
-plt.xlim(0, duration)
-plt.xlabel("time (second)")
-plt.ylabel("m/s^2")
-plt.title('Original Signal in Time Domain')
-
 
 """
 -----------------------------------------------------------
@@ -98,40 +33,64 @@ FFT
 
 """
 
-# print(np.sum([[1,2], [2,4]]))
+"""
+-----------------------------------------------------------
+-----------------------------------------------------------
+Notes
+hann_window = 0.5(1-cos(2*pi*x / (M-1)))
 
-# exit(0)
+"""
 
-# freq_space = np.fft.fftfreq(n=samples, d=sampling_freq)[0:samples//2]
-freq_space_window = np.fft.fftfreq(n=M, d=sampling_freq)[0:M//2]
+#setting up perameters
+Sfreq = 2000 #sampling frequency
+Tstep = 1/Sfreq #sample time interval
 
-spectrums = []
-for window in windows:
-	# spectrums.append(np.abs(np.fft.rfft(window)[0:-1]) / (sampling_freq*M))
-	# spectrum = np.abs(np.fft.rfft(window)[0:-1]) / (sampling_freq*M)
-	spectrum = np.abs(np.fft.rfft(window)[0:-1]) / (M/2)
-	print(len(window), len(spectrum))
-	# exit(0)
-	spectrums.append(np.array(getDS(spectrum, freq_space_window)))
+freq1 = 1/10 #frequency of wave 1
+mag1 = 10 #amplitude of wave 1
 
-# final_thing = np.sum(xs) / num_of_windows
-temp = spectrums[0]
-for spectrum in spectrums[1:]: 
-	temp += spectrum
-	# temp = np.add(temp, window) 
-final_thing = temp/num_of_windows
-# final_thing = [x/num_of_windows for x in temp]
-    
+freq2 = 1/15 #frequency of wave 2
+mag2 = 2 #amplitude of wave 2
 
-    
-# get the magnitudee of the spectrum then normalize by number of 'buckets' in the spectrum
-# spectrum = np.abs(np.fft.rfft(wave)[0:-1]) / (sampling_freq*samples)
-spectrum = np.abs(np.fft.rfft(wave)[0:-1]) / (samples/2)
-# spectrum = np.abs(np.fft.fft(wave)) / (samples/2)
+sample_scaler = 20
 
-# an array of frequency increments
-freq_space = np.fft.fftfreq(n=samples, d=sampling_freq)[0:samples//2]
-# freq_space = np.fft.fftfreq(n=samples, d=sampling_freq)[0:samples]
+# number of samples in data set
+samples  = int(sample_scaler * Sfreq / freq1)     
+
+# 20 minute sampling period
+duration = (samples-1)*Tstep    
+
+# array of time increments
+time = np.linspace(0, duration, samples)
+fstep = Sfreq / samples # freq interval
+f = np.linspace(0, (samples-1) * fstep, samples) #freq steps
+
+# a composite wave for basic testing
+wave = mag1*np.sin(2 * np.pi * time * freq1) + mag2 * np.cos(2 * np.pi * time * freq2)
+
+# FFT
+spectrum = np.fft.fft(wave)
+spectrum_mag = np.abs(spectrum) / samples
+
+#max wave is half of Sampling frequency. 
+f_plot = f[0:int(samples/2+1)]
+x_mag_plot = 2 * spectrum_mag[0:int(samples/2+1)]
+x_mag_plot[0] = spectrum_mag[0] / 2 
+
+#loop through data and apply the displacement spectrum density conversion to every PSD value. 
+displacement = list(x_mag_plot)
+print(len(f_plot), " ", len(x_mag_plot))
+
+for i in range(len(displacement)): 
+	if(spectrum[i] > 0):
+		FAS = spectrum[i]
+		displacement[i] = FAS/(math.pow((2 * math.pi * x_mag_plot[i]), 2))
+
+"""
+hann windows/Welch method
+"""
+M=0
+hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
+
 
 """
 From Pat:
@@ -148,32 +107,32 @@ PSD[1:-1] *=2
 """
 
 
-plt.figure(2)
-plt.plot(freq_space, spectrum)
-plt.ylabel("Amplitude, m/s^2")
-plt.xlabel("freq (Hz)")
-plt.title('freq Domain')
+# plotting
+fig, [ax1, ax2, ax3] = plt.subplots(nrows = 3, ncols= 1)
+ax1.plot(time, wave)
+ax2.plot(f_plot, x_mag_plot, '.-')
+ax3.plot(f_plot[0:len(displacement)], displacement, '.-')
 
 
-displacement = list(spectrum)
+ax1.set_xlabel("time (s)")
 
-#loop through data and apply the displacement spectrum density conversion to every PSD value. 
-for i in range(len(displacement)): 
-	if(spectrum[i] > 0):
-		FAS = spectrum[i]
-		displacement[i] = FAS/(math.pow((2*math.pi*freq_space[i]), 2))
+ax2.set_xlabel("Freq (Hz)")
+ax2.set_ylabel("PSD")
+
+ax3.set_xlabel("Freq (Hz)")
+ax3.set_ylabel("PSD")
 
 
-plt.figure(3)
-plt.plot(freq_space, displacement)
-plt.ylabel("Amplitude, m^2/Hz")
-plt.xlabel("freq (Hz)")
-plt.title('freq Domain')
 
-plt.figure(4)
-plt.plot(freq_space_window, final_thing)
-plt.ylabel("Amplitude, m^2/Hz")
-plt.xlabel("freq (Hz)")
-plt.title('freq Domain')
+ax1.grid()
+ax2.grid()
+ax3.grid()
 
+
+ax1.set_xlim(0, time[-1])  #sets a limit for x
+ax2.set_xlim(0, f_plot[-1]) 
+ax3.set_xlim(0, f_plot[-1]) 
+
+plt.tight_layout() #fix titles being cut off
 plt.show()
+

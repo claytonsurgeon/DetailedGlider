@@ -41,7 +41,7 @@ def clean_up(data):
 #takes two arrays representing the x (frequency) and y (PSD) coordinates for an acceleration spectrum density graph. 
 #returns the Displacement spectrum density data from AS
 def getDS(OF, T):
-    F = list(OF)
+    F = list(OF[0:len(OF)])
 
     #loop through data and apply the displacement spectrum density conversion to every PSD value. 
     for i in range(len(F)): 
