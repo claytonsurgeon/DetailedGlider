@@ -10,6 +10,34 @@ Read Data file
 
 """
 
+##################################
+# Real Data
+##################################
+acct, accx, accy, accz = parse_csv()
+
+acct = acct[2473:7083]
+accx = accx[2473:7083]
+accy = accy[2473:7083]
+accz = accz[2473:7083]
+# accx *= np.less(accx, 10)
+
+for i in range(len(accx)):
+    temp = accx[i]
+    if abs(accx[i]) > 5:
+        temp = 0
+    accx[i]=temp
+
+for i in range(len(accy)):
+    temp = accy[i]
+    if abs(accy[i]) > 5:
+        temp = 0
+    accy[i]=temp
+
+for i in range(len(accz)):
+    temp = accz[i]
+    if abs(accz[i]) > 5:
+        temp = 0
+    accz[i]=temp
 
 ##################################
 # Mock Wave
@@ -28,12 +56,19 @@ wave = 10*np.sin(2*np.pi*time * (1/1)) + 2*np.cos(2*np.pi*time * (1/30))
 ##################################
 # normal fft
 ##################################
+
+# mock wave
 A = np.fft.rfft(wave)
 spectrum = normalize(A, wave, 'power', sampling_freq, samples)
 # spectrum = normalize(A, wave, 'amplitude', sampling_freq, samples)
-
-
 freq_space = np.fft.rfftfreq(n=samples, d=sampling_freq)
+
+# real data
+print(len(accx))
+real_sample_freq = acct[len(acct)-1]-acct[0]/len(acct)
+# A = np.fft.rfft(accx)
+# realspectrum = normalize(A, np.array(accx), 'amplitude', real_sample_freq, len(acct))
+# real_freq_space = np.fft.rfftfreq(n=len(accx), d=real_sample_freq)
 
 
 ##################################
@@ -42,8 +77,20 @@ freq_space = np.fft.rfftfreq(n=samples, d=sampling_freq)
 # calculate number of windows and samples in each window
 num_of_windows = samples // 2**8
 M = samples // num_of_windows 
-final_thing = windowfft("hann", samples, M, num_of_windows, wave, sampling_freq)
+final_thing = windowfft("boxcar", samples, M, num_of_windows, wave, sampling_freq)
 freq_space_window = np.fft.rfftfreq(n=M, d=sampling_freq)
+
+
+num_of_windows = 6
+M = len(accx) // num_of_windows
+
+A = np.fft.rfft(accx)
+realspectrum = windowfft("hann", len(accx), M, num_of_windows, accx, real_sample_freq)
+real_freq_space = np.fft.rfftfreq(n=M, d=real_sample_freq)
+
+##################################
+# Calculate Banding
+##################################
 
 
 ##################################
@@ -51,9 +98,13 @@ freq_space_window = np.fft.rfftfreq(n=M, d=sampling_freq)
 ##################################
 a0 = getSWH(spectrum)
 print(a0)
+
+##################################
+# Calculate PeakPSD
+##################################
+print("peakPSD without windowing = ", spectrum.max())
+print("peakPSD with windowing =    ", final_thing.max())
     
-
-
 # plotting
 fig, [ax1, ax2, ax3] = plt.subplots(nrows = 3, ncols= 1)
 ax1.plot(time, wave)
@@ -84,5 +135,33 @@ ax1.set_xlim(0, time[-1])  #sets a limit for x
 ax2.set_xlim(0, freq_space[-1]) 
 ax3.set_xlim(0, freq_space_window[-1]) 
 
-plt.tight_layout() #fix titles being cut off
+# real_sample_freq = acct[len(acct)-1]-acct[0]/len(acct)
+# A = np.fft.rfft(accx)
+# realspectrum = normalize(A, accx, 'power', real_sample_freq, len(acct))
+# real_freq_space = np.fft.rfftfreq(n=len(accx), d=real_sample_freq)
+
+
+fig2, [acc1, fft1, acc2, acc3] = plt.subplots(nrows = 4, ncols= 1)
+acc1.plot(acct, accx)
+fft1.plot(real_freq_space, realspectrum)
+acc2.plot(acct, accy)
+acc3.plot(acct, accz)
+
+acc1.set_title("accX")
+fft1.set_title("accX FFT")
+
+acc1.set_xlabel("time (second)")
+acc1.set_ylabel("m/s^2")
+
+acc2.set_title("accY")
+acc2.set_xlabel("time (second)")
+acc2.set_ylabel("m/s^2")
+
+acc3.set_title("accZ")
+acc3.set_xlabel("time (second)")
+acc3.set_ylabel("m/s^2")
+plt.tight_layout()
 plt.show()
+
+
+

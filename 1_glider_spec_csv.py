@@ -1,5 +1,4 @@
 from cmath import sqrt
-from sunau import _sunau_params
 from typing import final
 import matplotlib.pyplot as plt
 import numpy as np

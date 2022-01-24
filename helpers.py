@@ -1,5 +1,76 @@
 import math
 import numpy as np
+import csv
+
+# temporary
+class Calculation:
+    duration = 20*60 # 20 minutes
+    samples = 2**12 # 4096 samples
+    fs = duration / (samples - 1) # frequency samples
+    time = np.linspace(0, duration, samples, endpoint=False) # time
+    wave = 10*np.sin(2*np.pi*time * (1/1)) + 2*np.cos(2*np.pi* time * (1/30)) # mock wave
+    freq_space = np.fft.rfftfreq(n=samples, d=fs) 
+    num_of_windows = samples // 2**8
+    M = samples // num_of_windows
+    hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
+
+class Direction():
+    t = []
+    x = []
+    y = []
+    z = []
+
+def parse_csv():
+    t = []
+    x = []
+    y = []
+    z = []
+    direction = []
+    with open('Output.csv', newline='') as csvfile:
+        #https://docs.python.org/3/library/csv.html
+        #https://evanhahn.com/python-skip-header-csv-reader/
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        #next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            t.append((float(row[0])))
+            x.append((float(row[1])))
+            y.append((float(row[2])))
+            z.append((float(row[3])))
+
+    return [t, x, y, z]
+
+        #print(Directions.x)
+        #print(Directions.y)
+        #print(Directions.z)
+
+######################
+#error in the mean = Standard Deviation(data) / sqrt(number samples)
+####################
+def calcPSD(xAxis, yAxis):
+    windows = []
+    N = Calculation.M//2
+
+    for i in range(0, Calculation.samples-Calculation.M+1, N):
+        next_window = Calculation.wave[i:i+Calculation.M] 
+        windows.append(next_window)
+
+    spectrums = np.zeros(N+1)
+    denominator = Calculation.hann_window.sum() * Calculation.fs
+
+    #for window in windows:
+    #    spectrum1 = (xAxis.conjugate() * yAxis).real / denominator
+    #    spectrum1[1:-1] *= 2
+    #    spectrums += spectrum1
+    
+    #PSD = spectrums/len(windows) * Calculation.num_of_windows
+    #return PSD
+
+    spectrum1 = (xAxis.conjugate() * yAxis).real / denominator
+    spectrum1[1:-1] *= 2
+
+    return spectrum1
+
 
 def normalize(data, wave_data, output, sampling_freq, samples):
     # get the magnitude of the spectrum then normalize by number of 'buckets' in the spectrum
@@ -8,7 +79,7 @@ def normalize(data, wave_data, output, sampling_freq, samples):
         spectrum = (data.conjugate() * data).real / (wave_data.size * sampling_freq)
         spectrum[1:-1] *= 2
     elif(output == 'amplitude'):
-        spectrum = np.sqrt(data.conjugate()*data) / (samples/2)
+        # spectrum = np.sqrt(data.conjugate()*data) / (samples/2)
         spectrum = np.abs(np.fft.rfft(wave_data)) / (samples/2)
     else:
         print("error: invalid output")
@@ -53,8 +124,18 @@ def windowfft(type, samples, M, num_of_windows, wave, sampling_freq):
     
     return final_thing
 
-def getSWH(spectrum):
-    sd = np.std(spectrum)
+
+#################
+# 
+#################
+def getSWH(wave):
+    
+    # freqBounds = wave.FreqBounds[:,:].to_numpy()
+    # fMid = freqBounds.mean(axis=1)
+    # a0 = zzBand / np.square(np.square(2 * np.pi * fMid))
+    
+
+    # sd = np.std(spectrum)
     
     return 0
 
