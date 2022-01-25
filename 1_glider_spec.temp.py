@@ -20,22 +20,23 @@ accx = accx[2473:7083]
 accy = accy[2473:7083]
 accz = accz[2473:7083]
 # accx *= np.less(accx, 10)
+cutoff = 10
 
 for i in range(len(accx)):
     temp = accx[i]
-    if abs(accx[i]) > 5:
+    if abs(accx[i]) > cutoff:
         temp = 0
     accx[i]=temp
 
 for i in range(len(accy)):
     temp = accy[i]
-    if abs(accy[i]) > 5:
+    if abs(accy[i]) > cutoff:
         temp = 0
     accy[i]=temp
 
 for i in range(len(accz)):
     temp = accz[i]
-    if abs(accz[i]) > 5:
+    if abs(accz[i]) > cutoff:
         temp = 0
     accz[i]=temp
 
@@ -66,9 +67,16 @@ freq_space = np.fft.rfftfreq(n=samples, d=sampling_freq)
 # real data
 print(len(accx))
 real_sample_freq = acct[len(acct)-1]-acct[0]/len(acct)
-# A = np.fft.rfft(accx)
-# realspectrum = normalize(A, np.array(accx), 'amplitude', real_sample_freq, len(acct))
-# real_freq_space = np.fft.rfftfreq(n=len(accx), d=real_sample_freq)
+A = np.fft.rfft(accx)
+realspectrum = normalize(A, np.array(accx), 'amplitude', real_sample_freq, len(acct))
+real_freq_space = np.fft.rfftfreq(n=len(accx), d=real_sample_freq)
+
+A = np.fft.rfft(accy)
+realspectrum2 = normalize(A, np.array(accy), 'amplitude', real_sample_freq, len(acct))
+
+A = np.fft.rfft(accz)
+realspectrum3 = normalize(A, np.array(accz), 'amplitude', real_sample_freq, len(acct))
+
 
 
 ##################################
@@ -81,12 +89,20 @@ final_thing = windowfft("boxcar", samples, M, num_of_windows, wave, sampling_fre
 freq_space_window = np.fft.rfftfreq(n=M, d=sampling_freq)
 
 
-num_of_windows = 6
-M = len(accx) // num_of_windows
+# num_of_windows = 6
+# M = len(accx) // num_of_windows
 
-A = np.fft.rfft(accx)
-realspectrum = windowfft("hann", len(accx), M, num_of_windows, accx, real_sample_freq)
-real_freq_space = np.fft.rfftfreq(n=M, d=real_sample_freq)
+# A = np.fft.rfft(accx)
+# realspectrum = windowfft("hann", len(accx), M, num_of_windows, accx, real_sample_freq)
+# real_freq_space = np.fft.rfftfreq(n=M, d=real_sample_freq)
+
+# A = np.fft.rfft(accy)
+# realspectrum2 = windowfft("hann", len(accy), M, num_of_windows, accy, real_sample_freq)
+
+
+# A = np.fft.rfft(accz)
+# realspectrum3 = windowfft("hann", len(accz), M, num_of_windows, accz, real_sample_freq)
+
 
 ##################################
 # Calculate Banding
@@ -141,23 +157,26 @@ ax3.set_xlim(0, freq_space_window[-1])
 # real_freq_space = np.fft.rfftfreq(n=len(accx), d=real_sample_freq)
 
 
-fig2, [acc1, fft1, acc2, acc3] = plt.subplots(nrows = 4, ncols= 1)
+fig2, [acc1, acc2, acc3, fft1, fft2, fft3] = plt.subplots(nrows = 6, ncols= 1)
 acc1.plot(acct, accx)
-fft1.plot(real_freq_space, realspectrum)
 acc2.plot(acct, accy)
 acc3.plot(acct, accz)
+fft1.plot(real_freq_space, realspectrum)
+fft2.plot(real_freq_space, realspectrum2)
+fft3.plot(real_freq_space, realspectrum3)
 
 acc1.set_title("accX")
 fft1.set_title("accX FFT")
-
 acc1.set_xlabel("time (second)")
 acc1.set_ylabel("m/s^2")
 
 acc2.set_title("accY")
+fft2.set_title("accy FFT")
 acc2.set_xlabel("time (second)")
 acc2.set_ylabel("m/s^2")
 
 acc3.set_title("accZ")
+fft3.set_title("accz FFT")
 acc3.set_xlabel("time (second)")
 acc3.set_ylabel("m/s^2")
 plt.tight_layout()
