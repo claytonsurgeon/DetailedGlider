@@ -52,7 +52,6 @@ print("sample_freq = ", 1/sample_freq)
 # normal fft
 ##################################
 
-# real data
 xFFT = np.fft.rfft(accx)
 spectrumX = calcPSD(xFFT, xFFT, sample_freq).real
 
