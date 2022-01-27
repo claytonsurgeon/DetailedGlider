@@ -1,18 +1,5 @@
-import math
 import numpy as np
 import csv
-
-# temporary
-class Calculation:
-    duration = 20*60 # 20 minutes
-    samples = 2**12 # 4096 samples
-    fs = duration / (samples - 1) # frequency samples
-    time = np.linspace(0, duration, samples, endpoint=False) # time
-    wave = 10*np.sin(2*np.pi*time * (1/1)) + 2*np.cos(2*np.pi* time * (1/30)) # mock wave
-    freq_space = np.fft.rfftfreq(n=samples, d=fs) 
-    num_of_windows = samples // 2**8
-    M = samples // num_of_windows
-    hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
 
 class Direction():
     t = []
@@ -33,39 +20,24 @@ def parse_csv(file):
             data.x.append((float(row[1])))
             data.y.append((float(row[2])))
             data.z.append((float(row[3])))
-
     return data
 
-        #print(Directions.x)
-        #print(Directions.y)
-        #print(Directions.z)
 
-######################
-#error in the mean = Standard Deviation(data) / sqrt(number samples)
-####################
-def calcPSD(xAxis, yAxis):
-    windows = []
-    N = Calculation.M//2
-
-    for i in range(0, Calculation.samples-Calculation.M+1, N):
-        next_window = Calculation.wave[i:i+Calculation.M] 
-        windows.append(next_window)
-
-    spectrums = np.zeros(N+1)
-    denominator = Calculation.hann_window.sum() * Calculation.fs
-
-    #for window in windows:
-    #    spectrum1 = (xAxis.conjugate() * yAxis).real / denominator
-    #    spectrum1[1:-1] *= 2
-    #    spectrums += spectrum1
-    
-    #PSD = spectrums/len(windows) * Calculation.num_of_windows
-    #return PSD
-
-    spectrum1 = (xAxis.conjugate() * yAxis).real / denominator
-    spectrum1[1:-1] *= 2
-
-    return spectrum1
+##################################
+# Calculate Power Spectral Density
+##################################
+# def calcPSD(xAxis, yAxis):
+#     pass
+def calcPSD(xFFT:np.array, yFFT:np.array, fs:float) -> np.array:
+    nfft = xFFT.size
+    qEven = nfft % 2
+    n = (nfft - 2 * qEven) * 2
+    psd = (xFFT.conjugate() * yFFT) / (fs * n)
+    if qEven:
+        psd[1:] *= 2 # Real FFT -> double for non-zero freq
+    else: # last point unpaired in Nyquist freq
+        psd[1:-1] *= 2 # Real FFT -> double for non-zero freq
+    return psd
 
 
 def normalize(data, wave_data, output, sampling_freq, samples):
@@ -86,7 +58,10 @@ def normalize(data, wave_data, output, sampling_freq, samples):
 """
 preforms FFT using windowing method. "hann" for hann windowing and "boxcar" for square windowing
 """
-def windowfft(type, samples, M, num_of_windows, wave, sampling_freq):
+def windowfft(data, num_of_windows, sample_freq, type):
+    samples = len(data)
+    M = samples // num_of_windows
+
     hann_window = []
     window = []
     if(type == 'boxcar'):
@@ -103,39 +78,27 @@ def windowfft(type, samples, M, num_of_windows, wave, sampling_freq):
     N = M//2
 
     for i in range(0, samples-M+1, N):
-        next_window = wave[i:i+M]
+        next_window = data[i:i+M]
         windows.append(next_window)
 
     spectrums = np.zeros(N+1)
 
-    denominator = hann_window.sum() * sampling_freq
+    denominator = hann_window.sum() * sample_freq
     for window in windows:        
         A = np.fft.rfft(window*hann_window)
-
-        spectrum1 = (A.conjugate() * A).real / denominator
-        spectrum1[1:-1] *= 2
-        spectrums += spectrum1
+        spectrum = calcPSD(A, A, sample_freq).real
+        spectrums += spectrum
 
     final_thing = spectrums/len(windows) * num_of_windows
     
     return final_thing
 
 
-#################
-# 
-#################
-def getSWH(wave):
-    
-    # freqBounds = wave.FreqBounds[:,:].to_numpy()
-    # fMid = freqBounds.mean(axis=1)
-    # a0 = zzBand / np.square(np.square(2 * np.pi * fMid))
-    
-
-    # sd = np.std(spectrum)
-    
-    return 0
-
-
+##################################
+# Calculate significant wave height
+##################################
+def getSWH():
+    pass
 
 
 
