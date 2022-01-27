@@ -65,7 +65,7 @@ spectrum = normalize(A, wave, 'power', sampling_freq, samples)
 freq_space = np.fft.rfftfreq(n=samples, d=sampling_freq)
 
 # real data
-print(len(accx))
+# print(len(accx))
 real_sample_freq = acct[len(acct)-1]-acct[0]/len(acct)
 A = np.fft.rfft(accx)
 realspectrum = normalize(A, np.array(accx), 'amplitude', real_sample_freq, len(acct))
@@ -89,8 +89,8 @@ final_thing = windowfft("boxcar", samples, M, num_of_windows, wave, sampling_fre
 freq_space_window = np.fft.rfftfreq(n=M, d=sampling_freq)
 
 
-# num_of_windows = 6
-# M = len(accx) // num_of_windows
+num_of_windows = 6
+M = len(accx) // num_of_windows
 
 # A = np.fft.rfft(accx)
 # realspectrum = windowfft("hann", len(accx), M, num_of_windows, accx, real_sample_freq)
