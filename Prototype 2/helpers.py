@@ -20,25 +20,21 @@ class Direction():
     y = []
     z = []
 
-def parse_csv():
-    t = []
-    x = []
-    y = []
-    z = []
-    direction = []
-    with open('Output.csv', newline='') as csvfile:
+def parse_csv(file):
+    data = Direction()
+    with open(file, newline='') as csvfile:
         #https://docs.python.org/3/library/csv.html
         #https://evanhahn.com/python-skip-header-csv-reader/
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
         #next(csvfile)
         for row in spamreader:
             # According to the csv file
-            t.append((float(row[0])))
-            x.append((float(row[1])))
-            y.append((float(row[2])))
-            z.append((float(row[3])))
+            data.t.append((float(row[0])))
+            data.x.append((float(row[1])))
+            data.y.append((float(row[2])))
+            data.z.append((float(row[3])))
 
-    return [t, x, y, z]
+    return data
 
         #print(Directions.x)
         #print(Directions.y)
@@ -177,3 +173,6 @@ def clean_up(data):
                 newArr[i][1] = data[i][1] - NC
 
     return newArr
+
+
+
