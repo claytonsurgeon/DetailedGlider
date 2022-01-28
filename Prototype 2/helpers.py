@@ -180,10 +180,11 @@ def normalize(data, wave_data, output, sampling_freq, samples):
 """
 preforms FFT using windowing method. "hann" for hann windowing and "boxcar" for square windowing
 """
-def windowfft(data, num_of_windows, sample_freq, type):
+def windowfft(data, M, sample_freq, type):
     samples = len(data)
-    M = samples // num_of_windows
 
+    num_of_windows = len(data) // M 
+    
     hann_window = []
     window = []
     if(type == 'boxcar'):
