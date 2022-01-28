@@ -1,11 +1,95 @@
 import numpy as np
 import csv
+import datetime
 
+#Temp class for Pat's data
+class Temp():
+    temp = []
+    ts = []
+    x = []
+    y = []
+    z = []
+    fLower = []
+    fUpper = []
+    
 class Direction():
     t = []
     x = []
     y = []
     z = []
+
+
+# Parses data for frequency sample
+def parse_fs(file):
+    fs = []
+    with open(file, newline='') as csvfile:
+        #https://docs.python.org/3/library/csv.html
+        #https://evanhahn.com/python-skip-header-csv-reader/
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            fs = float(row[0])
+    return fs
+
+
+# Parses data for the time values 
+def parse_ts(file):
+    data = Temp()
+    with open(file, newline='') as csvfile:
+        #https://docs.python.org/3/library/csv.html
+        #https://evanhahn.com/python-skip-header-csv-reader/
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            data.temp.append(row[0])
+            data.x.append(float(row[1]))
+            data.y.append(float(row[2]))
+            data.z.append(float(row[3]))
+
+    # Time conversion
+    start = datetime.datetime.strptime(str(data.temp[0])[:-3], '%Y-%m-%d %H:%M:%S.%f')
+    stringvar = ""
+    with open("t_values.csv", "w") as csv_file:
+        for i in range(len(data.temp)):
+            date = datetime.datetime.strptime(str(data.temp[i])[:-3], '%Y-%m-%d %H:%M:%S.%f')
+            stringvar += str(date.timestamp()-start.timestamp()) + ', ' + '\n'
+        csv_file.write(stringvar)
+    
+    with open("t_values.csv", newline='') as csvfile:
+        #https://docs.python.org/3/library/csv.html
+        #https://evanhahn.com/python-skip-header-csv-reader/
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in spamreader:
+            # According to the csv file
+            data.ts.append(float(row[0]))
+   
+    '''
+    The reason for this mess is because when I'm trying to use the raw value of stringvar on line 51,
+    and append it to data.ts, it would randomly print itself lwhen calling the function without actually printing it. 
+    A way to solve this issue I found was to just store it in a csv file and parse through it for the time values,
+    then store it in data.ts
+    '''
+    return data
+
+
+# Parses data for the lower and upper frequency bounds
+def parse_frequency(file):
+    data = Temp()
+    with open(file, newline='') as csvfile:
+        #https://docs.python.org/3/library/csv.html
+        #https://evanhahn.com/python-skip-header-csv-reader/
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            data.fLower.append((float(row[1])))
+            data.fUpper.append((float(row[2])))
+        
+
+    return data
+
 
 def parse_csv(file):
     data = Direction()
@@ -112,7 +196,7 @@ def clean_up(data):
     ASF24 = np.argmin(np.abs(np.array([i[0] for i in newArr])-0.02))
 
     #print out AS(12deltaf) and AS(24deltaf) information for testing
-    print("ASF12: \n\tFrequency = ", (newArr[ASF12][0]), "\n\tPSD = ", (newArr[ASF12][1]), "\n", "ASF24: \n\tFrequency =", (newArr[ASF24][0]), "\n\tPSD = ", (newArr[ASF24][1]))
+    #print("ASF12: \n\tFrequency = ", (newArr[ASF12][0]), "\n\tPSD = ", (newArr[ASF12][1]), "\n", "ASF24: \n\tFrequency =", (newArr[ASF24][0]), "\n\tPSD = ", (newArr[ASF24][1]))
 
     #calculating GU
     GU = ((newArr[ASF12][1]) + (newArr[ASF24][1]))/2.0
