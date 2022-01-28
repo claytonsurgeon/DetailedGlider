@@ -16,12 +16,12 @@ class Temp():
 class Wave():
     tLower = []
     tUpper = []
-    Hs = 0
-    Ta = 0
-    Tp = 0
-    Tz = 0 
-    Dp = 0
-    PeakPSD = 0
+    Hs = []
+    Ta = []
+    Tp = []
+    Tz = [] 
+    Dp = []
+    PeakPSD = []
     
 class Direction():
     t = []
@@ -46,12 +46,12 @@ def parse_wave_data(file):
             # According to the csv file
             wave.tLower.append(row[0])
             wave.tUpper.append(row[1])
-            wave.Hs = (float(row[2]))
-            wave.Ta = (float(row[3]))
-            wave.Tp = (float(row[2]))
-            wave.Tz = (float(row[3]))
-            wave.Dp = (float(row[2]))
-            wave.PeakPSD = (float(row[3]))
+            wave.Hs.append(float(row[2]))
+            wave.Ta.append(float(row[3]))
+            wave.Tp.append(float(row[2]))
+            wave.Tz.append(float(row[3]))
+            wave.Dp.append(float(row[2]))
+            wave.PeakPSD.append(float(row[3]))
     return wave        
 
     

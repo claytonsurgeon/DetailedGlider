@@ -1,3 +1,4 @@
+from cmath import nan
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -144,6 +145,7 @@ cnt = quant.sum(axis=1)
 
 # .sum(axis=1) is a summation of columns
 # .sum(axis=0) is a summation of rows
+
 xxBand = (quant * spectrumX).sum(axis=1) / cnt
 yyBand = (quant * spectrumY).sum(axis=1) / cnt
 zzBand = (quant * spectrumZ).sum(axis=1) / cnt
@@ -156,13 +158,27 @@ zzBand = (quant * spectrumZ).sum(axis=1) / cnt
 # Calculating significant wave height
 ##################################
 
+for i in zzBand:
+    if i == nan: 
+        i = 0
+
 fMid = freqBound.mean(axis=1)
+
 a0 = zzBand / np.square(np.square(2*np.pi*fMid))
+
+for i in fMid:
+    if i == nan: 
+        i = 0 
+
+for i in a0:
+    if i == nan: 
+        i = 0 
+
 m0 = (a0 * freq_bound.bandwidth).sum()
 
-print("fmid = ", fMid)
-print("a0 = ", a0)
-print("m0 = ", m0)
+# print("fmid = ", fMid)
+# print("a0 = ", a0)
+print("m0 = ", m0, "\texpected m0 = ", wave_data.Hs[block_selector])
 
 
 
