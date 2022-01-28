@@ -11,13 +11,50 @@ class Temp():
     z = []
     fLower = []
     fUpper = []
+    bandwidth = []
+
+class Wave():
+    tLower = []
+    tUpper = []
+    Hs = 0
+    Ta = 0
+    Tp = 0
+    Tz = 0 
+    Dp = 0
+    PeakPSD = 0
     
 class Direction():
     t = []
     x = []
     y = []
+    z = []    
+
+class Block():
+    t = []
+    x = []
+    y = []
     z = []
 
+
+
+def parse_wave_data(file):
+    wave = Wave()
+    with open(file, newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            wave.tLower.append(row[0])
+            wave.tUpper.append(row[1])
+            wave.Hs = (float(row[2]))
+            wave.Ta = (float(row[3]))
+            wave.Tp = (float(row[2]))
+            wave.Tz = (float(row[3]))
+            wave.Dp = (float(row[2]))
+            wave.PeakPSD = (float(row[3]))
+    return wave        
+
+    
 
 # Parses data for frequency sample
 def parse_fs(file):
@@ -84,6 +121,7 @@ def parse_frequency(file):
         next(csvfile)
         for row in spamreader:
             # According to the csv file
+            data.bandwidth.append((float(row[0])))
             data.fLower.append((float(row[1])))
             data.fUpper.append((float(row[2])))
         
