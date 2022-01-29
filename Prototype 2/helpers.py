@@ -11,13 +11,50 @@ class Temp():
     z = []
     fLower = []
     fUpper = []
+    bandwidth = []
+
+class Wave():
+    tLower = []
+    tUpper = []
+    Hs = []
+    Ta = []
+    Tp = []
+    Tz = [] 
+    Dp = []
+    PeakPSD = []
     
 class Direction():
     t = []
     x = []
     y = []
+    z = []    
+
+class Block():
+    t = []
+    x = []
+    y = []
     z = []
 
+
+
+def parse_wave_data(file):
+    wave = Wave()
+    with open(file, newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        next(csvfile)
+        for row in spamreader:
+            # According to the csv file
+            wave.tLower.append(row[0])
+            wave.tUpper.append(row[1])
+            wave.Hs.append(float(row[2]))
+            wave.Ta.append(float(row[3]))
+            wave.Tp.append(float(row[2]))
+            wave.Tz.append(float(row[3]))
+            wave.Dp.append(float(row[2]))
+            wave.PeakPSD.append(float(row[3]))
+    return wave        
+
+    
 
 # Parses data for frequency sample
 def parse_fs(file):
@@ -84,6 +121,7 @@ def parse_frequency(file):
         next(csvfile)
         for row in spamreader:
             # According to the csv file
+            data.bandwidth.append((float(row[0])))
             data.fLower.append((float(row[1])))
             data.fUpper.append((float(row[2])))
         
@@ -142,10 +180,11 @@ def normalize(data, wave_data, output, sampling_freq, samples):
 """
 preforms FFT using windowing method. "hann" for hann windowing and "boxcar" for square windowing
 """
-def windowfft(data, num_of_windows, sample_freq, type):
+def windowfft(data, M, sample_freq, type):
     samples = len(data)
-    M = samples // num_of_windows
 
+    num_of_windows = len(data) // M 
+    
     hann_window = []
     window = []
     if(type == 'boxcar'):
