@@ -71,17 +71,15 @@ def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float)
     width = A_FFT_windows[0].size
     spectrums = np.complex128(np.zeros(width))
     bias = Bias(width, "hann")
-
     for i in range(len(A_FFT_windows)):
         A = A_FFT_windows[i]
         B = B_FFT_windows[i]
 
         spectrum = calcPSD(A, B, frequency)
         spectrums += spectrum
-
     # return spectrums * frequency
     # return spectrums/bias.sum() * frequency
-    return spectrums
+    return spectrums / len(A_FFT_windows)
 
 
 def windowfft(data, M, sample_freq, type):
@@ -117,6 +115,8 @@ def windowfft(data, M, sample_freq, type):
         spectrums += spectrum
 
     final_thing = spectrums/len(windows) * num_of_windows
+
+
 
     return final_thing
 
@@ -194,7 +194,11 @@ def Data():
             "peak-period": wave_xr.Tp,
             "mean-zero-upcross-period": wave_xr.Tz,
             "peak-direction": wave_xr.Dp,
-            "peak-PSD": wave_xr.PeakPSD
+            "peak-PSD": wave_xr.PeakPSD,
+            "a1": wave_xr.A1,
+            "b1": wave_xr.B1,
+            "a2": wave_xr.A2,
+            "b2": wave_xr.B2,
         }
 
         data["wave"]["time-bounds"] = {
