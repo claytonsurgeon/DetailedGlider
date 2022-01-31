@@ -48,6 +48,79 @@ META = True
 filename = "./067.20201225_1200.20201225_1600.nc"
 
 
+def Bias(width, type="hann"):
+    return np.ones(width) if type == "boxcar" else (
+        0.5*(1 - np.cos(2*np.pi*np.array(range(0, width)) / (width - 0)))
+    )
+
+    # denominator = bias.sum() * frequency
+
+
+def wfft(data, width, type="hann"):
+    bias = Bias(width, type)
+
+    windows = []
+    for i in range(0, data.size-width+1, width//2):
+        window = data[i:i+width]
+        windows.append(np.fft.rfft(window*bias))
+
+    return windows
+
+
+def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float) -> np.array:
+    width = A_FFT_windows[0].size
+    spectrums = np.complex128(np.zeros(width))
+    bias = Bias(width, "hann")
+
+    for i in range(len(A_FFT_windows)):
+        A = A_FFT_windows[i]
+        B = B_FFT_windows[i]
+
+        spectrum = calcPSD(A, B, frequency)
+        spectrums += spectrum
+
+    # return spectrums * frequency
+    # return spectrums/bias.sum() * frequency
+    return spectrums
+
+
+def windowfft(data, M, sample_freq, type):
+    samples = len(data)
+
+    num_of_windows = len(data) // M
+
+    hann_window = []
+    window = []
+    if(type == 'boxcar'):
+        hann_window = np.ones(M)
+        pass
+    elif(type == 'hann'):
+        hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
+        pass
+    else:
+        print("error: invalid type")
+        exit(0)
+
+    windows = []
+    N = M//2
+
+    for i in range(0, samples-M+1, N):
+        next_window = data[i:i+M]
+        windows.append(next_window)
+
+    spectrums = np.zeros(N+1)
+
+    denominator = hann_window.sum() * sample_freq
+    for window in windows:
+        A = np.fft.rfft(window*hann_window)
+        spectrum = calcPSD(A, A, sample_freq).real
+        spectrums += spectrum
+
+    final_thing = spectrums/len(windows) * num_of_windows
+
+    return final_thing
+
+
 def calcPSD(xFFT: np.array, yFFT: np.array, fs: float) -> np.array:
     nfft = xFFT.size
     qEven = nfft % 2
@@ -131,9 +204,12 @@ def Data():
 
     if FREQ:
         data["freq"] = {
-            "bandwidth": wave_xr.Bandwidth,
-            "lower-bound": wave_xr.FreqBounds[:, 0],
-            "upper-bound": wave_xr.FreqBounds[:, 1],
+            "bandwidth": wave_xr.Bandwidth.to_numpy(),
+        }
+        data["freq"]["bounds"] = {
+            "lower": wave_xr.FreqBounds[:, 0].to_numpy(),
+            "upper": wave_xr.FreqBounds[:, 1].to_numpy(),
+            "joint": wave_xr.FreqBounds[:, :].to_numpy()
         }
 
     return data
