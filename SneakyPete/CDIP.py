@@ -61,34 +61,62 @@ def Bias(width:int, window:str="hann") -> np.array:
         0.5*(1 - np.cos(2*np.pi*np.arange(width) / (width - 0)))
     )
 
+# old 
+# def wfft(data, width, type="hann"):
+#     """Splits the acceleration data into widows, 
+#     preforms FFTs on them returning a list of all the windows
+#     """
+#     bias = Bias(width, type)
+#     windows = []
+#     for i in range(0, data.size-width+1, width//2):
+#         window = data[i:i+width]
+#         windows.append(np.fft.rfft(window*bias))
 
-def wfft(data, width, type="hann"):
-    """Splits the acceleration data into widows, 
-    preforms FFTs on them returning a list of all the windows
-    """
-    bias = Bias(width, type)
-    windows = []
+#     return windows
+
+def wfft(data:np.array, width:int, window:str="hann") -> list[np.array]:
+    bias = Bias(width, window)
+
+    ffts = []
     for i in range(0, data.size-width+1, width//2):
-        window = data[i:i+width]
-        windows.append(np.fft.rfft(window*bias))
+        w = data[i:i+width]
+        ffts.append(np.fft.rfft(w*bias))
 
-    return windows
+    return ffts
 
+# old
+# def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float) -> np.array:
+#     """calculates the PSD of the FFT output preformed with the windowing method.
+#     After calculateing the PSD of each window, the resulting lists are averaged together"""
+#     width = A_FFT_windows[0].size
+#     spectrums = np.complex128(np.zeros(width))
+    
+#     for i in range(len(A_FFT_windows)):
+#         A = A_FFT_windows[i]
+#         B = B_FFT_windows[i]
+#         spectrum = calcPSD(A, B, frequency)
+#         spectrums += spectrum
 
-def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float) -> np.array:
+#     return spectrums / len(A_FFT_windows)\
+
+# new
+def wcalcPSD(
+        A_FFT_windows:list[np.array], 
+        B_FFT_windows:list[np.array],
+        fs:float,
+        window:str) -> np.array:
     """calculates the PSD of the FFT output preformed with the windowing method.
     After calculateing the PSD of each window, the resulting lists are averaged together"""
+
     width = A_FFT_windows[0].size
     spectrums = np.complex128(np.zeros(width))
-    
     for i in range(len(A_FFT_windows)):
         A = A_FFT_windows[i]
         B = B_FFT_windows[i]
-        spectrum = calcPSD(A, B, frequency)
+
+        spectrum = calcPSD(A, B, fs, window=window)
         spectrums += spectrum
-
     return spectrums / len(A_FFT_windows)
-
 
 ##################################
 # maybe ask about how this works? We normalize for 
@@ -154,7 +182,7 @@ def calcAcceleration(x: np.array, fs: float) -> np.array:
     return dx2 * fs * fs
 
 
-def Data():
+def Data() -> dict:
     """Master data reading function. Reads the .nc file from CDIP.
     The data is stored in dictionary (data), which contains many dictionaries 
     to hold information. Examples include: acceleration data, frequency bounds, 

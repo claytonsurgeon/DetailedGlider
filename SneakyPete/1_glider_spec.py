@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 
 
 # plotting perameters
-displayPSD = False
+displayPSD = True
 displayDS = True
 
 # fft perameters
-window_type = "boxcar"
+window_type = "hann"
 
 
 # call master data function to extract all our data from the .nc file
@@ -67,25 +67,25 @@ for i in range(len(time_bounds["lower"])):
     # Calculate PSD of data from normal FFT
     PSD = {
         # imaginary part is zero
-        "xx": calcPSD(FFT["x"], FFT["x"], data["frequency"]).real,
-        "yy": calcPSD(FFT["y"], FFT["y"], data["frequency"]).real,
-        "zz": calcPSD(FFT["z"], FFT["z"], data["frequency"]).real,
+        "xx": calcPSD(FFT["x"], FFT["x"], data["frequency"], window_type).real,
+        "yy": calcPSD(FFT["y"], FFT["y"], data["frequency"], window_type).real,
+        "zz": calcPSD(FFT["z"], FFT["z"], data["frequency"], window_type).real,
 
-        "xy": calcPSD(FFT["x"], FFT["y"], data["frequency"]),
+        "xy": calcPSD(FFT["x"], FFT["y"], data["frequency"], window_type),
         # "xz": calcPSD(FFT["x"], FFT["z"], data["frequency"]),
-        "zx": calcPSD(FFT["z"], FFT["x"], data["frequency"]),
+        "zx": calcPSD(FFT["z"], FFT["x"], data["frequency"], window_type),
 
         # "yz": calcPSD(FFT["y"], FFT["z"], data["frequency"]),
-        "zy": calcPSD(FFT["z"], FFT["y"], data["frequency"]),
+        "zy": calcPSD(FFT["z"], FFT["y"], data["frequency"], window_type),
         
 
     }
 
     # calculate PSD on output from welch method FFT
     wPSD = {
-        "xx": wcalcPSD(wFFT["x"], wFFT["x"], data["frequency"]).real,
-        "yy": wcalcPSD(wFFT["y"], wFFT["y"], data["frequency"]).real,
-        "zz": wcalcPSD(wFFT["z"], wFFT["z"], data["frequency"]).real,
+        "xx": wcalcPSD(wFFT["x"], wFFT["x"], data["frequency"], window_type).real,
+        "yy": wcalcPSD(wFFT["y"], wFFT["y"], data["frequency"], window_type).real,
+        "zz": wcalcPSD(wFFT["z"], wFFT["z"], data["frequency"], window_type).real,
 
         "freq_space": np.fft.rfftfreq(wFFT["z"][0].size*2-1, 1/data["frequency"])
     }
