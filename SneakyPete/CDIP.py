@@ -47,28 +47,18 @@ WAVE = True
 META = True
 filename = "./067.20201225_1200.20201225_1600.nc"
 
-def Plotter(x1, x2, x3, y1, y2, y3, direction):
-    fig, [plt_psd, plt_psd_banded, plt_w_psd] = plt.subplots(nrows=3, ncols=1)
-    plt_psd.plot(x1, y1)
-    plt_psd.set_ylabel("Amplitude, m/s^2")
-    plt_psd.set_xlabel("freq (Hz)")
-    plt_psd.set_title(direction + ' PSD')
+# old
+# def Bias(width, type="hann"):
+#     """returns a either a boxcar, or hann window"""
+#     return np.ones(width) if type == "boxcar" else (
+#         0.5*(1 - np.cos(2*np.pi*np.array(range(0, width)) / (width - 0)))
+#     )
 
-    plt_psd_banded.plot(x2, y2)
-    plt_psd_banded.set_ylabel("Amplitude, m/s^2")
-    plt_psd_banded.set_xlabel("freq (Hz)")
-    plt_psd_banded.set_title(direction + ' Banded PSD')
-
-    plt_w_psd.plot(x3, y3)
-    plt_w_psd.set_ylabel("Amplitude, m/s^2")
-    plt_w_psd.set_xlabel("freq (Hz)")
-    plt_w_psd.set_title(direction + ' Windowed PSD')
-    return fig
-
-def Bias(width, type="hann"):
+# new
+def Bias(width:int, window:str="hann") -> np.array:
     """returns a either a boxcar, or hann window"""
-    return np.ones(width) if type == "boxcar" else (
-        0.5*(1 - np.cos(2*np.pi*np.array(range(0, width)) / (width - 0)))
+    return np.ones(width) if window == "boxcar" else (
+        0.5*(1 - np.cos(2*np.pi*np.arange(width) / (width - 0)))
     )
 
 
@@ -105,16 +95,34 @@ def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float)
 # PSD similar to how we did it initally, but im 
 # not sure what we are doing with evens and odds. 
 ##################################
-def calcPSD(xFFT: np.array, yFFT: np.array, fs: float) -> np.array:
+
+# old
+# def calcPSD(xFFT: np.array, yFFT: np.array, fs: float) -> np.array:
+#     "calculates the PSD on an output of a FFT"
+#     nfft = xFFT.size
+#     qEven = nfft % 2
+#     n = (nfft - 2 * qEven) * 2
+#     psd = (xFFT.conjugate() * yFFT) / (fs * n)
+#     if qEven:
+#         psd[1:] *= 2            # Real FFT -> double for non-zero freq
+#     else:                       # last point unpaired in Nyquist freq
+#         psd[1:-1] *= 2          # Real FFT -> double for non-zero freq
+#     return psd
+
+
+# new
+def calcPSD(xFFT:np.array, yFFT:np.array, fs:float, window:str) -> np.array:
     "calculates the PSD on an output of a FFT"
     nfft = xFFT.size
-    qEven = nfft % 2
-    n = (nfft - 2 * qEven) * 2
-    psd = (xFFT.conjugate() * yFFT) / (fs * n)
-    if qEven:
-        psd[1:] *= 2            # Real FFT -> double for non-zero freq
-    else:                       # last point unpaired in Nyquist freq
-        psd[1:-1] *= 2          # Real FFT -> double for non-zero freq
+    qOdd = nfft % 2
+    n = (nfft - qOdd) * 2 # Number of data points input to FFT
+    w = Bias(n, window) # Get the window used
+    wSum = (w * w).sum()
+    psd = (xFFT.conjugate() * yFFT) / (fs * wSum)
+    if not qOdd:       # Even number of FFT bins
+        psd[1:] *= 2   # Real FFT -> double for non-zero freq
+    else:              # last point unpaired in Nyquist freq
+        psd[1:-1] *= 2 # Real FFT -> double for non-zero freq
     return psd
 
 
