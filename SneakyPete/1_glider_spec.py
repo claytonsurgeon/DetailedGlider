@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 displayPSD = False
 displayDS = True
 
+# fft perameters
+window_type = "boxcar"
+
+
 # call master data function to extract all our data from the .nc file
 data = Data()
 
@@ -55,9 +59,9 @@ for i in range(len(time_bounds["lower"])):
 
     # preform FFT on block using welch mothod
     wFFT = {
-        "x": wfft(acc["x"], 2**7, "boxcar"),
-        "y": wfft(acc["y"], 2**7, "boxcar"),
-        "z": wfft(acc["z"], 2**7, "boxcar"),
+        "x": wfft(acc["x"], 2**7, window_type),
+        "y": wfft(acc["y"], 2**7, window_type),
+        "z": wfft(acc["z"], 2**7, window_type),
     }
    
     # Calculate PSD of data from normal FFT
