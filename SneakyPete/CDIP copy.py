@@ -29,15 +29,15 @@
 #
 # Dec-2021, Pat Welch
 
-# import argparse
+import argparse
 import numpy as np
-# import pandas as pd
+import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-# import datetime
-# from scipy import signal
-# import scipy.fft as sp_fft
-# import sys
+import datetime
+from scipy import signal
+import scipy.fft as sp_fft
+import sys
 # from WaveNumber import waveNumber
 
 
@@ -47,119 +47,92 @@ WAVE = True
 META = True
 filename = "./067.20201225_1200.20201225_1600.nc"
 
-# old
-# def Bias(width, type="hann"):
-#     """returns a either a boxcar, or hann window"""
-#     return np.ones(width) if type == "boxcar" else (
-#         0.5*(1 - np.cos(2*np.pi*np.array(range(0, width)) / (width - 0)))
-#     )
 
-# new
-def Bias(width:int, window:str="hann") -> np.array:
-    """returns a either a boxcar, or hann window"""
-    return np.ones(width) if window == "boxcar" else (
-        0.5*(1 - np.cos(2*np.pi*np.arange(width) / (width - 0)))
+def Bias(width, type="hann"):
+    return np.ones(width) if type == "boxcar" else (
+        0.5*(1 - np.cos(2*np.pi*np.array(range(0, width)) / (width - 0)))
     )
 
-# old 
-# def wfft(data, width, type="hann"):
-#     """Splits the acceleration data into widows, 
-#     preforms FFTs on them returning a list of all the windows
-#     """
-#     bias = Bias(width, type)
-#     windows = []
-#     for i in range(0, data.size-width+1, width//2):
-#         window = data[i:i+width]
-#         windows.append(np.fft.rfft(window*bias))
+    # denominator = bias.sum() * frequency
 
-#     return windows
 
-def wfft(data:np.array, width:int, window:str="hann") -> list[np.array]:
-    """Splits the acceleration data into widows, 
-    preforms FFTs on them returning a list of all the windows
-    """
-    bias = Bias(width, window)
+def wfft(data, width, type="hann"):
+    bias = Bias(width, type)
 
-    ffts = []
+    windows = []
     for i in range(0, data.size-width+1, width//2):
-        w = data[i:i+width]
-        ffts.append(np.fft.rfft(w*bias))
+        window = data[i:i+width]
+        windows.append(np.fft.rfft(window*bias))
 
-    return ffts
+    return windows
 
-# old
-# def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float) -> np.array:
-#     """calculates the PSD of the FFT output preformed with the windowing method.
-#     After calculateing the PSD of each window, the resulting lists are averaged together"""
-#     width = A_FFT_windows[0].size
-#     spectrums = np.complex128(np.zeros(width))
-    
-#     for i in range(len(A_FFT_windows)):
-#         A = A_FFT_windows[i]
-#         B = B_FFT_windows[i]
-#         spectrum = calcPSD(A, B, frequency)
-#         spectrums += spectrum
 
-#     return spectrums / len(A_FFT_windows)\
-
-# new
-def wcalcPSD(
-        A_FFT_windows:list[np.array], 
-        B_FFT_windows:list[np.array],
-        fs:float,
-        window:str) -> np.array:
-    """calculates the PSD of the FFT output preformed with the windowing method.
-    After calculateing the PSD of each window, the resulting lists are averaged together"""
-
+def wcalcPSD(A_FFT_windows: np.array, B_FFT_windows: np.array, frequency: float) -> np.array:
     width = A_FFT_windows[0].size
     spectrums = np.complex128(np.zeros(width))
+    bias = Bias(width, "hann")
     for i in range(len(A_FFT_windows)):
         A = A_FFT_windows[i]
         B = B_FFT_windows[i]
 
-        spectrum = calcPSD(A, B, fs, window=window)
+        spectrum = calcPSD(A, B, frequency)
         spectrums += spectrum
+    # return spectrums * frequency
+    # return spectrums/bias.sum() * frequency
     return spectrums / len(A_FFT_windows)
 
-##################################
-# maybe ask about how this works? We normalize for 
-# PSD similar to how we did it initally, but im 
-# not sure what we are doing with evens and odds. 
-##################################
 
-# old
-# def calcPSD(xFFT: np.array, yFFT: np.array, fs: float) -> np.array:
-#     "calculates the PSD on an output of a FFT"
-#     nfft = xFFT.size
-#     qEven = nfft % 2
-#     n = (nfft - 2 * qEven) * 2
-#     psd = (xFFT.conjugate() * yFFT) / (fs * n)
-#     if qEven:
-#         psd[1:] *= 2            # Real FFT -> double for non-zero freq
-#     else:                       # last point unpaired in Nyquist freq
-#         psd[1:-1] *= 2          # Real FFT -> double for non-zero freq
-#     return psd
+def windowfft(data, M, sample_freq, type):
+    samples = len(data)
+
+    num_of_windows = len(data) // M
+
+    hann_window = []
+    window = []
+    if(type == 'boxcar'):
+        hann_window = np.ones(M)
+        pass
+    elif(type == 'hann'):
+        hann_window = 0.5*(1 - np.cos(2*np.pi*np.array(range(0, M)) / (M - 0)))
+        pass
+    else:
+        print("error: invalid type")
+        exit(0)
+
+    windows = []
+    N = M//2
+
+    for i in range(0, samples-M+1, N):
+        next_window = data[i:i+M]
+        windows.append(next_window)
+
+    spectrums = np.zeros(N+1)
+
+    denominator = hann_window.sum() * sample_freq
+    for window in windows:
+        A = np.fft.rfft(window*hann_window)
+        spectrum = calcPSD(A, A, sample_freq).real
+        spectrums += spectrum
+
+    final_thing = spectrums/len(windows) * num_of_windows
 
 
-# new
-def calcPSD(xFFT:np.array, yFFT:np.array, fs:float, window:str) -> np.array:
-    "calculates the PSD on an output of a FFT"
+
+    return final_thing
+
+
+def calcPSD(xFFT: np.array, yFFT: np.array, fs: float) -> np.array:
     nfft = xFFT.size
-    qOdd = nfft % 2
-    n = (nfft - qOdd) * 2 # Number of data points input to FFT
-    w = Bias(n, window) # Get the window used
-    wSum = (w * w).sum()
-    psd = (xFFT.conjugate() * yFFT) / (fs * wSum)
-    if not qOdd:       # Even number of FFT bins
-        psd[1:] *= 2   # Real FFT -> double for non-zero freq
-    else:              # last point unpaired in Nyquist freq
-        psd[1:-1] *= 2 # Real FFT -> double for non-zero freq
+    qEven = nfft % 2
+    n = (nfft - 2 * qEven) * 2
+    psd = (xFFT.conjugate() * yFFT) / (fs * n)
+    if qEven:
+        psd[1:] *= 2            # Real FFT -> double for non-zero freq
+    else:                       # last point unpaired in Nyquist freq
+        psd[1:-1] *= 2          # Real FFT -> double for non-zero freq
     return psd
 
 
-##################################
-# Im not sure what this is for. We dont use this anywhere
-##################################
 def zeroCrossingAverage(z: np.array, fs: float) -> float:
     q = z[0:-1] * z[1:] < 0         # opposite times between successive zs
     iLHS = np.flatnonzero(q)        # Indices of LHS
@@ -176,20 +149,13 @@ def zeroCrossingAverage(z: np.array, fs: float) -> float:
 
 
 def calcAcceleration(x: np.array, fs: float) -> np.array:
-    """converts displacement data to acceleration.
-    We need acceleration data because that is
-    what we will record from the STM"""
     dx2 = np.zeros(x.shape)
     dx2[2:] = np.diff(np.diff(x))
     dx2[0:2] = dx2[2]
     return dx2 * fs * fs
 
 
-def Data() -> dict:
-    """Master data reading function. Reads the .nc file from CDIP.
-    The data is stored in dictionary (data), which contains many dictionaries 
-    to hold information. Examples include: acceleration data, frequency bounds, 
-    expected values calculated by CDIP, etc."""
+def Data():
     meta_xr = xr.open_dataset(filename, group="Meta")  # For water depth
     wave_xr = xr.open_dataset(filename, group="Wave")
     xyz_xr = xr.open_dataset(filename, group="XYZ")
@@ -251,5 +217,3 @@ def Data() -> dict:
         }
 
     return data
-
-

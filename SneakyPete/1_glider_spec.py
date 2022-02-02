@@ -28,6 +28,10 @@ freq_lower = freq_bounds["lower"]
 freq_upper = freq_bounds["upper"]
 freq_midpoints = freq_bounds["joint"].mean(axis=1)
 
+# print(1/freq_midpoints)
+# print(data["freq"]["bandwidth"] )
+# exit(0)
+
 
 # loop runs through every analisis block, displaying output calculations 
 # and graphs at the end of each loop run
@@ -59,24 +63,24 @@ for i in range(len(time_bounds["lower"])):
 
     # preform FFT on block using welch mothod
     wFFT = {
-        "x": wfft(acc["x"], 2**7, window_type),
-        "y": wfft(acc["y"], 2**7, window_type),
-        "z": wfft(acc["z"], 2**7, window_type),
+        "x": wfft(acc["x"], 2**8, window_type),
+        "y": wfft(acc["y"], 2**8, window_type),
+        "z": wfft(acc["z"], 2**8, window_type),
     }
    
     # Calculate PSD of data from normal FFT
     PSD = {
         # imaginary part is zero
-        "xx": calcPSD(FFT["x"], FFT["x"], data["frequency"], window_type).real,
-        "yy": calcPSD(FFT["y"], FFT["y"], data["frequency"], window_type).real,
-        "zz": calcPSD(FFT["z"], FFT["z"], data["frequency"], window_type).real,
+        "xx": calcPSD(FFT["x"], FFT["x"], data["frequency"], "boxcar").real,
+        "yy": calcPSD(FFT["y"], FFT["y"], data["frequency"], "boxcar").real,
+        "zz": calcPSD(FFT["z"], FFT["z"], data["frequency"], "boxcar").real,
 
-        "xy": calcPSD(FFT["x"], FFT["y"], data["frequency"], window_type),
+        "xy": calcPSD(FFT["x"], FFT["y"], data["frequency"], "boxcar"),
         # "xz": calcPSD(FFT["x"], FFT["z"], data["frequency"]),
-        "zx": calcPSD(FFT["z"], FFT["x"], data["frequency"], window_type),
+        "zx": calcPSD(FFT["z"], FFT["x"], data["frequency"], "boxcar"),
 
         # "yz": calcPSD(FFT["y"], FFT["z"], data["frequency"]),
-        "zy": calcPSD(FFT["z"], FFT["y"], data["frequency"], window_type),
+        "zy": calcPSD(FFT["z"], FFT["y"], data["frequency"], "boxcar"),
         
 
     }
@@ -118,12 +122,28 @@ for i in range(len(time_bounds["lower"])):
     ##########################################
     # sig wave height
     ##########################################
-
+    
     a0 = Band["zz"] / np.square(np.square(2 * np.pi * freq_midpoints))
+
+    tp = 1/freq_midpoints[a0.argmax()]
     # a0W = wPSD["zz"][1:65] / np.square(np.square(2 * np.pi * wPSD["freq_space"][1:65]))
     m0 = (a0 * data["freq"]["bandwidth"]).sum()
 
+    # shore side
+    mm1 = (a0/freq_midpoints*data["freq"]["bandwidth"]).sum()
+    te = mm1/m0 #mean energy period
+
+    wave_energy_ratio = te/tp
+
+    m1 = (a0*freq_midpoints*data["freq"]["bandwidth"]).sum()
+
+    m2 = (a0*np.square(freq_midpoints)*data["freq"]["bandwidth"]).sum()
+    ta = m0/m1
+    tz = np.sqrt(m0/m2)
+
+
     wave = data["wave"]
+
 
     # print("Hs from CDIP", float(wave["sig-height"][i]),
     #       "4*sqrt(z.var0)", 4 * np.sqrt(acc["z"].var()),
@@ -154,6 +174,11 @@ for i in range(len(time_bounds["lower"])):
 
     a2 = (Band["xx"] - Band["yy"]) / denom
     b2 = -2 * Band["xy"].real / denom
+
+    dp = np.arctan2(b1[a0.argmax()], a1[a0.argmax()]) #radians
+    
+    print("dp_true =", np.degrees(dp)%360)
+    # print("dp_mag =", np.degrees(dp+data["meta"]["declination"])%360)
 
     # print(
     #     "a1 = ", a1, "\n expected = ", data["wave"]["a1"], "\n"
@@ -250,5 +275,7 @@ for i in range(len(time_bounds["lower"])):
 
     if(displayDS or displayPSD):
         plt.show()
+
+    print("\n--------------------------\n")
 
     exit(0)
