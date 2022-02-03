@@ -223,9 +223,12 @@ def Data() -> dict:
         w = 5
         data["acc"] = {
             "t": data["time"],
-            "x": Rolling_mean(calcAcceleration(xyz_xr.x.to_numpy(), frequency), w),
-            "y": Rolling_mean(calcAcceleration(xyz_xr.y.to_numpy(), frequency), w),
-            "z": Rolling_mean(calcAcceleration(xyz_xr.z.to_numpy(), frequency), w),
+            # "x": Rolling_mean(calcAcceleration(xyz_xr.x.to_numpy(), frequency), w),
+            # "y": Rolling_mean(calcAcceleration(xyz_xr.y.to_numpy(), frequency), w),
+            # "z": Rolling_mean(calcAcceleration(xyz_xr.z.to_numpy(), frequency), w),
+            "x": calcAcceleration(xyz_xr.x.to_numpy(), frequency),
+            "y": calcAcceleration(xyz_xr.y.to_numpy(), frequency),
+            "z": calcAcceleration(xyz_xr.z.to_numpy(), frequency),
         }
 
     if WAVE:
