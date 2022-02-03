@@ -47,6 +47,12 @@ WAVE = True
 META = True
 filename = "./067.20201225_1200.20201225_1600.nc"
 
+def Rolling_mean(x:np.array, w:np.array) -> np.array:
+    return np.convolve(x, np.ones(w), "valid") / w
+
+
+
+
 # old
 # def Bias(width, type="hann"):
 #     """returns a either a boxcar, or hann window"""
@@ -214,11 +220,12 @@ def Data() -> dict:
             "y": xyz_xr.y.to_numpy(),
             "z": xyz_xr.z.to_numpy()
         }
+        w = 5
         data["acc"] = {
             "t": data["time"],
-            "x": calcAcceleration(xyz_xr.x.to_numpy(), frequency),
-            "y": calcAcceleration(xyz_xr.y.to_numpy(), frequency),
-            "z": calcAcceleration(xyz_xr.z.to_numpy(), frequency)
+            "x": Rolling_mean(calcAcceleration(xyz_xr.x.to_numpy(), frequency), w),
+            "y": Rolling_mean(calcAcceleration(xyz_xr.y.to_numpy(), frequency), w),
+            "z": Rolling_mean(calcAcceleration(xyz_xr.z.to_numpy(), frequency), w),
         }
 
     if WAVE:
