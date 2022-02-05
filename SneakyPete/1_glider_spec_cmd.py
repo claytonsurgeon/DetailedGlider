@@ -1,17 +1,11 @@
-
-
 # import Data from CDIP
 from CDIP import (Data, calcPSD, wcalcPSD, wfft)
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import argparse
+from argparse import ArgumentParser
 
-def process(fn:str, args:argparse.ArgumentParser) -> None:
-    # plotting perameters
-    displayPSD = True
-    displayDS = True
-
+def process(fn:str, args:ArgumentParser) -> None:
     # fft perameters
     window_type = "hann"
 
@@ -69,7 +63,7 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             "y": wfft(acc["y"], 2**8, window_type),
             "z": wfft(acc["z"], 2**8, window_type),
         }
-    
+
         # Calculate PSD of data from normal FFT
         PSD = {
             # imaginary part is zero
@@ -92,6 +86,13 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             "xx": wcalcPSD(wFFT["x"], wFFT["x"], data["frequency"], window_type).real,
             "yy": wcalcPSD(wFFT["y"], wFFT["y"], data["frequency"], window_type).real,
             "zz": wcalcPSD(wFFT["z"], wFFT["z"], data["frequency"], window_type).real,
+
+            "xy": wcalcPSD(wFFT["x"], wFFT["y"], data["frequency"], window_type).real,
+ 
+
+            "zx": wcalcPSD(wFFT["z"], wFFT["x"], data["frequency"], window_type).real,
+            "zy": wcalcPSD(wFFT["z"], wFFT["y"], data["frequency"], window_type).real,
+
 
             "freq_space": np.fft.rfftfreq(wFFT["z"][0].size*2-1, 1/data["frequency"])
         }
@@ -121,66 +122,125 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
 
         print("Processing Block {0}".format(i))
 
-        ##########################################
-        # sig wave height
-        ##########################################
-        
-        a0 = Band["zz"] / np.square(np.square(2 * np.pi * freq_midpoints))
+        if (args.banding):
+            print(len(Band["xx"]))
+            print(len(wPSD["xx"]))
+            #exit(0)
 
+
+        ##########################################
+        # Welch Method sig wave height
+        ##########################################
+        welch_a0 = wPSD["zz"][0:64] / np.square(np.square(2 * np.pi * freq_midpoints))
+        welch_tp = 1/freq_midpoints[welch_a0.argmax()]
+        welch_m0 = (welch_a0 * data["freq"]["bandwidth"]).sum()
+        welch_mm1 = (welch_a0 / freq_midpoints*data["freq"]["bandwidth"]).sum()
+        welch_te = welch_mm1 / welch_m0 
+        welch_WER = welch_te / welch_tp 
+        welch_m1 = (welch_a0*freq_midpoints*data["freq"]["bandwidth"]).sum()
+        welch_m2 = (welch_a0*np.square(freq_midpoints)*data["freq"]["bandwidth"]).sum()
+        welch_ta = welch_m0 / welch_m1
+        welch_tz = np.sqrt(welch_m0 / welch_m2)
+        wave = data["wave"]
+
+        if (args.welch):
+            print("Hs from CDIP", float(wave["sig-height"][i]),
+                "4*sqrt(z.var0)", 4 * np.sqrt(acc["z"].var()),
+                "4*sqrt(m0)", 4 * np.sqrt(welch_m0))
+            print("Significant Wave Height: \n\tExpected value = {0}\n\tCalc using variance = {1},\n\tCalc using m0 = {2}".format(
+                    float(wave["sig-height"][i]), 4 * np.sqrt(acc["z"].var()), 4 * np.sqrt(welch_m0)
+                )
+            )
+
+
+        ##########################################
+        # Banding sig wave height
+        ##########################################
+        #if (args.banding):
+        a0 = Band["zz"] / np.square(np.square(2 * np.pi * freq_midpoints))
         tp = 1/freq_midpoints[a0.argmax()]
         # a0W = wPSD["zz"][1:65] / np.square(np.square(2 * np.pi * wPSD["freq_space"][1:65]))
         m0 = (a0 * data["freq"]["bandwidth"]).sum()
-
         # shore side
         mm1 = (a0/freq_midpoints*data["freq"]["bandwidth"]).sum()
         te = mm1/m0 #mean energy period
-
         wave_energy_ratio = te/tp
-
         m1 = (a0*freq_midpoints*data["freq"]["bandwidth"]).sum()
-
         m2 = (a0*np.square(freq_midpoints)*data["freq"]["bandwidth"]).sum()
         ta = m0/m1
         tz = np.sqrt(m0/m2)
-
-
         wave = data["wave"]
 
+        # if (args.banding):
+        #     print("Banding: ", a0)
+        #     print("Welch: ", welch_a0)
+        #     exit(0)
 
-        # print("Hs from CDIP", float(wave["sig-height"][i]),
-        #       "4*sqrt(z.var0)", 4 * np.sqrt(acc["z"].var()),
-        #       "4*sqrt(m0)", 4 * np.sqrt(m0))
-        # print("Significant Wave Height: \n\tExpected value = {0}\n\tCalc using variance = {1},\n\tCalc using m0 = {2}".format(
-        #         float(wave["sig-height"][i]), 4 * np.sqrt(acc["z"].var()), 4 * np.sqrt(m0)
-        #     )
-        # )
+
+        if (args.banding):
+            print("Banding \n")
+            print("Hs from CDIP", float(wave["sig-height"][i]),
+                "4*sqrt(z.var0)", 4 * np.sqrt(acc["z"].var()),
+                "4*sqrt(m0)", 4 * np.sqrt(m0))
+            print("Significant Wave Height: \n\tExpected value = {0}\n\tCalc using variance = {1},\n\tCalc using m0 = {2}".format(
+                    float(wave["sig-height"][i]), 4 * np.sqrt(acc["z"].var()), 4 * np.sqrt(m0)
+                )
+            )
+
+            print("Welch \n")
+            print("Hs from CDIP", float(wave["sig-height"][i]),
+                "4*sqrt(z.var0)", 4 * np.sqrt(acc["z"].var()),
+                "4*sqrt(m0)", 4 * np.sqrt(welch_m0))
+            print("Significant Wave Height: \n\tExpected value = {0}\n\tCalc using variance = {1},\n\tCalc using m0 = {2}".format(
+                    float(wave["sig-height"][i]), 4 * np.sqrt(acc["z"].var()), 4 * np.sqrt(welch_m0)
+                )
+            )
+            exit(0)
+
+
+
 
         ##########################################
-        # peak psd
+        # Banding peak psd
         ##########################################
         peakPSD = a0.max()
-        # print("PeakPSD:\n\tFrom CDIP {0}\n\tcalc {1}".format(
-        #         float(wave["peak-PSD"][i]), peakPSD
-        #     )
-        # )
+        print("PeakPSD:\n\tFrom CDIP {0}\n\tcalc {1}".format(
+                float(wave["peak-PSD"][i]), peakPSD
+            )
+        )
 
         ##########################################
-        # a1, b1, a2, b2
+        # Banding a1, b1, a2, b2
         ##########################################
         denom = np.sqrt(Band["zz"] * (Band["xx"] + Band["yy"]))
+        welch_denom = np.sqrt(wPSD["zz"] * (wPSD["xx"] + wPSD["yy"]))
+
+        
 
         a1 = Band["zx"].imag / denom
+        welch_a1 = wPSD["zx"] / welch_denom # results with all 0s if using .imag
+
         b1 = -Band["zy"].imag / denom
+        welch_b1 = wPSD["zy"] / welch_denom
 
         denom = Band["xx"] + Band["yy"]
+        welch_denom = wPSD["xx"] + wPSD["yy"]
 
         a2 = (Band["xx"] - Band["yy"]) / denom
+        welch_a2 = wPSD["xx"] - wPSD["yy"] / welch_denom
+        
         b2 = -2 * Band["xy"].real / denom
+        welch_b2 = -2 * wPSD["xy"] / welch_denom
+
+        if (args.banding):
+            print("Banding:", b2)
+            print("Welch Method:", welch_b2)
+            exit(0)
 
         dp = np.arctan2(b1[a0.argmax()], a1[a0.argmax()]) #radians
         
         #print("dp_true =", np.degrees(dp)%360)
-        # print("dp_mag =", np.degrees(dp+data["meta"]["declination"])%360)
+        #print("dp_mag =", np.degrees(dp+data["meta"]["declination"])%360)
 
         # print(
         #     "a1 = ", a1, "\n expected = ", data["wave"]["a1"], "\n"
@@ -190,15 +250,16 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
 
         # )
 
+
         ##########################################
-        # dominant period
+        # Banding dominant period
         ##########################################
-        # print("Dominant Period:\n\tTp from CDIP = {0}\n\tCalc = {1}\n\tCalc not banded {2}".format(
-        #         float(data["wave"]["peak-period"][i]),
-        #         1/freq_midpoints[a0.argmax()],
-        #         1/freq_space[PSD["zz"].argmax()]
-        #     )
-        # ) 
+        print("Dominant Period:\n\tTp from CDIP = {0}\n\tCalc = {1}\n\tCalc not banded {2}".format(
+                float(data["wave"]["peak-period"][i]),
+                1/freq_midpoints[a0.argmax()],
+                1/freq_space[PSD["zz"].argmax()]
+            )
+        ) 
 
         ##########################################
         # panda dataframe
@@ -215,16 +276,14 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
         # df["m2"] = b2
         # df["n2"] = b2
 
-
-
-
         ##########################################
         # plotting
         ##########################################
-        fig1 = Plotter(freq_space, PSD["xx"], freq_midpoints, Band["xx"], wPSD["freq_space"], wPSD["xx"], "X")
-        if(displayPSD):
+        banding_fig1 = (freq_space, PSD["xx"], freq_midpoints, Band["xx"], "X")
+        welch_fig1 = (freq_space, PSD["xx"], wPSD["freq_space"], wPSD["xx"], "X")
+        if(args.banding):
             # X
-            fig1, [plt_psd_xx, plt_psd_banded_xx, plt_w_psd_xx] = plt.subplots(nrows=3, ncols=1)
+            banding_fig1, [plt_psd_xx, plt_psd_banded_xx] = plt.subplots(nrows=2, ncols=1)
             plt_psd_xx.plot(freq_space, PSD["xx"])
             plt_psd_xx.set_ylabel("Amplitude, m/s^2")
             plt_psd_xx.set_title('X PSD')
@@ -232,15 +291,10 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             plt_psd_banded_xx.plot(freq_midpoints, Band["xx"])
             plt_psd_banded_xx.set_ylabel("Amplitude, m/s^2")
             plt_psd_banded_xx.set_title('X Banded PSD')
-
-            plt_w_psd_xx.plot(wPSD["freq_space"], wPSD["xx"])
-            plt_w_psd_xx.set_ylabel("Amplitude, m/s^2")
-            plt_w_psd_xx.set_xlabel("freq (Hz)")
-            plt_w_psd_xx.set_title("X Windowed PSD")
             plt.tight_layout()
 
             # y
-            fig2, [plt_psd_yy, plt_psd_banded_yy, plt_w_psd_yy] = plt.subplots(nrows=3, ncols=1)
+            banding_fig2, [plt_psd_yy, plt_psd_banded_yy] = plt.subplots(nrows=2, ncols=1)
             plt_psd_yy.plot(freq_space, PSD["yy"])
             plt_psd_yy.set_ylabel("Amplitude, m/s^2")
             plt_psd_yy.set_title('Y PSD')
@@ -248,15 +302,10 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             plt_psd_banded_yy.plot(freq_midpoints, Band["yy"])
             plt_psd_banded_yy.set_ylabel("Amplitude, m/s^2")
             plt_psd_banded_yy.set_title('Y Banded PSD')
-
-            plt_w_psd_yy.plot(wPSD["freq_space"], wPSD["yy"])
-            plt_w_psd_yy.set_ylabel("Amplitude, m/s^2")
-            plt_w_psd_yy.set_xlabel("freq (Hz)")
-            plt_w_psd_yy.set_title("Y Windowed PSD")
             plt.tight_layout()
 
             # Z
-            fig3, [plt_psd_zz, plt_psd_banded_zz, plt_w_psd_zz] = plt.subplots(nrows=3, ncols=1)
+            banding_fig2, [plt_psd_zz, plt_psd_banded_zz] = plt.subplots(nrows=2, ncols=1)
             plt_psd_zz.plot(freq_space, PSD["zz"])
             plt_psd_zz.set_ylabel("Amplitude, m/s^2")
             plt_psd_zz.set_title('Z PSD')
@@ -265,13 +314,46 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             plt_psd_banded_zz.set_ylabel("Amplitude, m/s^2")
             plt_psd_banded_zz.set_xlabel("freq (Hz)")
             plt_psd_banded_zz.set_title('Z Banded PSD')
-
-            plt_w_psd_zz.plot(wPSD["freq_space"], wPSD["zz"])
-            plt_w_psd_zz.set_ylabel("Amplitude, m/s^2")
-            plt_w_psd_zz.set_title("Z Windowed PSD")
             plt.tight_layout()
+       
+       
+        if(args.welch):
+                # X  
+                welch_fig1, [plt_psd_xx, plt_w_psd_xx] = plt.subplots(nrows=2, ncols=1)
+                plt_psd_xx.plot(freq_space, PSD["xx"])
+                plt_psd_xx.set_ylabel("Amplitude, m/s^2")
+                plt_psd_xx.set_title('X PSD')
 
-        if(displayDS):
+                plt_w_psd_xx.plot(wPSD["freq_space"], wPSD["xx"])
+                plt_w_psd_xx.set_ylabel("Amplitude, m/s^2")
+                plt_w_psd_xx.set_xlabel("freq (Hz)")
+                plt_w_psd_xx.set_title("X Windowed PSD")
+                plt.tight_layout()
+
+                # y
+                welch_fig2, [plt_psd_yy, plt_w_psd_yy] = plt.subplots(nrows=2, ncols=1)
+                plt_psd_yy.plot(freq_space, PSD["yy"])
+                plt_psd_yy.set_ylabel("Amplitude, m/s^2")
+                plt_psd_yy.set_title('Y PSD')
+
+                plt_w_psd_yy.plot(wPSD["freq_space"], wPSD["yy"])
+                plt_w_psd_yy.set_ylabel("Amplitude, m/s^2")
+                plt_w_psd_yy.set_xlabel("freq (Hz)")
+                plt_w_psd_yy.set_title("Y Windowed PSD")
+                plt.tight_layout()
+
+                # Z
+                welch_fig3, [plt_psd_zz, plt_w_psd_zz] = plt.subplots(nrows=2, ncols=1)
+                plt_psd_zz.plot(freq_space, PSD["zz"])
+                plt_psd_zz.set_ylabel("Amplitude, m/s^2")
+                plt_psd_zz.set_title('Z PSD')
+
+                plt_w_psd_zz.plot(wPSD["freq_space"], wPSD["zz"])
+                plt_w_psd_zz.set_ylabel("Amplitude, m/s^2")
+                plt_w_psd_zz.set_title("Z Windowed PSD")
+                plt.tight_layout()
+
+        if(args.banding):
             fig4, [pa1, pb1, pa2, pb2] = plt.subplots(nrows=4, ncols=1)
             pa1.plot(freq_midpoints, a1)
             pa1.plot(freq_midpoints, data["wave"]["a1"][i])
@@ -292,23 +374,18 @@ def process(fn:str, args:argparse.ArgumentParser) -> None:
             pb2.set_xlabel("freq (Hz)")
             plt.tight_layout()
 
-
-
-        if(displayDS or displayPSD):
+        if(args.welch or args.banding):
             plt.show()
 
-
-
-
         print("\n--------------------------\n")
+        exit(0)
 
-        #exit(0)
-
-parser = argparse.ArgumentParser
-parser.add_argument("--welch", action="store_true", help="Welch Method")
-parser.add_argument("--banding", action="store_true", help="Banding")
-parser.add_argument("nc", nargs="+", type=str, help="netCDF file to process")
+parser = ArgumentParser()
+grp = parser.add_mutually_exclusive_group()
+grp.add_argument("--welch", action="store_true", help="Welch Method") # type --welch before nc file
+grp.add_argument("--banding", action="store_true", help="Banding") # type --banding before nc file 
+parser.add_argument("nc", nargs="+", type=str, help="netCDF file to process") # typed after commands 
 args = parser.parse_args()
 
 for fn in args.nc:
-    continue
+    process(fn, args)
