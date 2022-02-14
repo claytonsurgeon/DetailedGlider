@@ -3,6 +3,7 @@ from CDIP import (Data, calcPSD, wcalcPSD, wfft)
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import xarray as xr
 from argparse import ArgumentParser
 
 def process(fn:str, args:ArgumentParser) -> None:
@@ -275,6 +276,15 @@ def process(fn:str, args:ArgumentParser) -> None:
         # df["m1"] = b2
         # df["m2"] = b2
         # df["n2"] = b2
+
+        ##########################################
+        # Write into netCDF file
+        ##########################################
+
+        # ds = xr.Dataset( 
+        #     "Hs": Hs
+        # )
+
 
         ##########################################
         # plotting
